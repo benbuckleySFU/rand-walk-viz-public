@@ -1,4 +1,4 @@
-"# rand-walk-viz-public" 
+# rand-walk-viz-public
 
 Interface for generating and visualizing random 3D lattice walks restricted to the positive octant.
 
@@ -44,14 +44,14 @@ A set of options for visualizing and animating walks.
 
 By default, the colour of a step represents its position within a walk (i.e. the first step is red, the last step is magenta).
 
-# Colour = XYZ Position
+## Colour = XYZ Position
 
 Instead of the default colour-coding, colour the steps so that their colour represents how close they are to each axis. Red = X, Green = Y, Blue = Z.
 
-# Show Convex Hull
+## Show Convex Hull
 
 "Animate Walks" must be selected to use this option. This shows the convex hull of simultaneous positions in the set of walks being displayed.
 
-# Import Walks
+## Import Walks
 
 To import a set of walks, copy and paste a step series (or multiple step series) in the proper format.
