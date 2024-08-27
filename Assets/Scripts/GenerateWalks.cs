@@ -62,12 +62,13 @@ public class GenerateWalks : MonoBehaviour
 
     // Streamwriter for logging data:
     private StreamWriter swLog;
+    public bool loggingWalks;
     private StreamWriter swStats;
 
     // Variables used for animation
     public Boolean animated = false;
     private int currentAnimationFrame = 0;
-    private float interval = 1.0f / 24.0f;
+    private float interval = 1.0f / 24.0f; // Default: 1.0f / 24.0f, as in 24 frames per second
     private float nextFrameTime = 0;
     private int animTrail = 1;
 
@@ -93,6 +94,11 @@ public class GenerateWalks : MonoBehaviour
 
     // Variables needed for timed runs
     private int lengthTimedRun = 10;
+
+    // Variables needed for sound
+    bool soundOn = false;
+    public GameObject soundObject;
+    public GameObject singleWalkSoundObjectTemplate;
 
     void Start()
     {
@@ -131,16 +137,35 @@ public class GenerateWalks : MonoBehaviour
 
         /*
         // Testing excursion frequency
-        int walkLength = 10;
-        for (int i = 0; walkLength <= 50; i++)
+        swStats.WriteLine("Walk target length\tNum Walks Generated\tNum walks that return to origin\tNum Excursions");
+        int walkLength = 20;
+        for (int i = 0; walkLength <= 200; i++)
         {
-            testExcursions(walkLength, 100);
-            walkLength += 10;
+            testExcursions(walkLength, 1000);
+            walkLength += 20;
         }
         */
-        
 
-
+        // Goal: Get batch statistics for walks in increments of 10 for lengths 10 to 1000-ish.
+        // For Boltzmann, +- 5.
+        /*
+        loggingWalks = false;
+        for (int i = 10; i < 101; i = i + 10)
+        {
+            numSteps = i;
+            // Just use default weights
+            displayWalkCloud();
+        }
+        // Now, Boltzmann:
+        createGenerator("[evaluations = {D = 5.715403245, P = 119.5345480, P_aux = 20.91445571, L_1 = .9521861810, R_1 = .9521861810, a_1 = .1666, b_1 = .1666, c_1 = .1666, c_2 = .1666, c_3 = .1666, c_4 = .1666}, grammar = {D = Union(Epsilon,Prod(c_1,D),Prod(c_2,D),Prod(c_3,D),Prod(c_4,D),Prod(L_1,R_1)), P = Prod(D,P_aux), P_aux = Union(Epsilon,Prod(L_1,P_aux)), L_1 = Union(Prod(a_1,D)), R_1 = Union(Prod(b_1,D)), a_1 = Atom, b_1 = Atom, c_1 = Atom, c_2 = Atom, c_3 = Atom, c_4 = Atom}, rho_approx = {.1666}, atomSet = {a_1 = [0, 0, 1], b_1 = [0, 0, -1], c_1 = [1, 0, 0], c_2 = [0, 1, 0], c_3 = [-1, 0, 0], c_4 = [0, -1, 0]}]");
+        for (int i = 10; i < 101; i = i + 10)
+        {
+            minSteps = i - 5;
+            maxSteps = i + 5;
+            // Just use default weights
+            displayWalkCloudBoltzmann();
+        }
+        */
     }
 
     // Update is called once per frame
@@ -246,6 +271,20 @@ public class GenerateWalks : MonoBehaviour
         }
     }
 
+    public void toggleSound(bool soundOnIn)
+    {
+        if (soundOnIn)
+        {
+            UnityEngine.Debug.Log("Sound turned on!");
+            soundOn = true;
+        }
+        else
+        {
+            UnityEngine.Debug.Log("Sound turned off!");
+            soundOn = false;
+        }
+    }
+
     void animateOneFrame()
     {
         // Let's see if I can get one cube visible at a time.
@@ -255,13 +294,29 @@ public class GenerateWalks : MonoBehaviour
         if (displayConvexHulls)
         {
             // Display the convex hull associated with currentAnimationFrame
-            UnityEngine.Debug.Log("Current animation frame: " + currentAnimationFrame);
-            UnityEngine.Debug.Log("convexHulls.Count: " + convexHulls.Count);
+            //UnityEngine.Debug.Log("Current animation frame: " + currentAnimationFrame);
+            //UnityEngine.Debug.Log("convexHulls.Count: " + convexHulls.Count);
             if (convexHulls.Count > currentAnimationFrame) // Should always be true, but sometimes messes up when generating new walks
             {
                 convexHullParent.GetComponent<MeshFilter>().mesh = convexHulls[currentAnimationFrame];
             }
 
+        }
+
+        if (soundOn)
+        {
+            //UnityEngine.Debug.Log("soundObject.transform.childCount = " + soundObject.transform.childCount);
+
+            for (int i = 0; i < soundObject.transform.childCount; i++)
+            {
+                soundObject.transform.GetChild(i).transform.GetChild(0).GetComponent<AudioSource>().pitch = 1 + currentWalksNormalized[0][currentAnimationFrame].x;
+                soundObject.transform.GetChild(i).transform.GetChild(0).GetComponent<AudioSource>().Play();
+                soundObject.transform.GetChild(i).transform.GetChild(1).GetComponent<AudioSource>().pitch = 2 + currentWalksNormalized[0][currentAnimationFrame].y;
+                soundObject.transform.GetChild(i).transform.GetChild(1).GetComponent<AudioSource>().Play();
+                soundObject.transform.GetChild(i).transform.GetChild(2).GetComponent<AudioSource>().pitch = 3 + currentWalksNormalized[0][currentAnimationFrame].z;
+                soundObject.transform.GetChild(i).transform.GetChild(2).GetComponent<AudioSource>().Play();
+            }
+            
         }
 
         if (currentAnimationFrame > animTrail)
@@ -326,6 +381,12 @@ public class GenerateWalks : MonoBehaviour
             numWalks = newVal;
         }
         UnityEngine.Debug.Log("numWalks: " + numWalks);
+
+        while (soundObject.transform.childCount < numWalks)
+        {
+            // Make a bunch of copies of the template
+            GameObject newSoundObject = Instantiate(singleWalkSoundObjectTemplate, soundObject.transform);
+        }
     }
 
     public void setNumSteps(String numStepsInput)
@@ -663,18 +724,22 @@ public class GenerateWalks : MonoBehaviour
     public void logCurrentWalks()
     {
         
-
-        UnityEngine.Debug.Log("currentWalks:");
-        for (int i = 0; i < currentWalks.Count; i++)
+        if (loggingWalks)
         {
-            // Unity log
-            UnityEngine.Debug.Log("Length: " + currentWalks[i].Length);
-            //UnityEngine.Debug.Log("[" + string.Join(", ", currentWalks[i]) + "]");
-            // File log
-            swLog.WriteLine("Length: " + currentWalks[i].Length);
-            swLog.WriteLine("[" + string.Join(", ", currentWalks[i]) + "]");
-            
+            UnityEngine.Debug.Log("currentWalks:");
+            for (int i = 0; i < currentWalks.Count; i++)
+            {
+                // Unity log
+                UnityEngine.Debug.Log("Length: " + currentWalks[i].Length);
+                //UnityEngine.Debug.Log("[" + string.Join(", ", currentWalks[i]) + "]");
+                // File log
+                swLog.WriteLine("Length: " + currentWalks[i].Length);
+                swLog.WriteLine("[" + string.Join(", ", currentWalks[i]) + "]");
+
+            }
+
         }
+
     }
 
     public void normalizeWalks()
@@ -933,7 +998,7 @@ public class GenerateWalks : MonoBehaviour
         TextMeshProUGUI newTitleText = newTitleCanvas.transform.GetChild(0).gameObject.GetComponent<TextMeshProUGUI>();
         newTitleText.color = new Color(0, 0, 0, 0.5f);
         //UnityEngine.Debug.Log(newTitleText.name);
-        ((TextMeshProUGUI)newTitleText).SetText("Length: " + stepSeriesInput.Length + "\n# Visits to origin: N/A");
+        ((TextMeshProUGUI)newTitleText).SetText("Length: " + stepSeriesInput.Length);
 
         //TextMeshProUGUI newTitleText = Instantiate(numStepsText, position, Quaternion.identity, newTitleCanvas.transform);
         //newTitleText.SetText("New Message");
@@ -1489,31 +1554,49 @@ public class GenerateWalks : MonoBehaviour
         // Use the stepset with drift (-1,-1,-1)
         string grammarString = "[evaluations = {D = 1.592592638, P = 2.820845434, P_aux = 1.772750416, L_1 = .2040693826, L_2 = .03889145064, L_3 = .05530660054, L_4 = .1388679150, R_1 = .3987497634, R_2 = .1224121716, R_3 = .3113246277, R_4 = 1.527547068, a_1 = .08720000787, a_2 = .08720000787, b_1 = .08720000787, b_2 = .08720000787, b_3 = .08720000787, b_4 = .08720000787, b_5 = .08720000787, b_6 = .08720000787, b_7 = .08720000787, b_8 = .08720000787, b_9 = .08720000787, b_10 = .08720000787, b_11 = .08720000787, b_12 = .08720000787, b_13 = .08720000787, c_1 = .08720000787, c_2 = .08720000787}, grammar = {D = Union(Epsilon,Prod(c_1,D),Prod(c_2,D),Prod(L_1,R_1),Prod(L_2,R_2),Prod(L_3,R_3),Prod(L_4,R_4)), P = Prod(D,P_aux), P_aux = Union(Epsilon,Prod(L_1,P_aux),Prod(L_2,P_aux),Prod(L_3,P_aux),Prod(L_4,P_aux)), L_1 = Union(Prod(a_2,D),Prod(L_2,R_1),Prod(L_3,R_2),Prod(L_4,R_3)), L_2 = Union(Prod(L_3,R_1),Prod(L_4,R_2)), L_3 = Union(Prod(L_4,R_1)), L_4 = Union(Prod(a_1,D)), R_1 = Union(Prod(b_12,D),Prod(b_13,D),Prod(L_1,R_2),Prod(L_2,R_3),Prod(L_3,R_4)), R_2 = Union(Prod(L_1,R_3),Prod(L_2,R_4)), R_3 = Union(Prod(L_1,R_4)), R_4 = Union(Prod(b_1,D),Prod(b_2,D),Prod(b_3,D),Prod(b_4,D),Prod(b_5,D),Prod(b_6,D),Prod(b_7,D),Prod(b_8,D),Prod(b_9,D),Prod(b_10,D),Prod(b_11,D)), a_1 = Atom, a_2 = Atom, b_1 = Atom, b_2 = Atom, b_3 = Atom, b_4 = Atom, b_5 = Atom, b_6 = Atom, b_7 = Atom, b_8 = Atom, b_9 = Atom, b_10 = Atom, b_11 = Atom, b_12 = Atom, b_13 = Atom, c_1 = Atom, c_2 = Atom}, rho_approx = {.8720000787e-1}, atomSet = {a_1 = [1, 0, 0], a_2 = [0, 1, 0], b_1 = [-1, 0, 0], b_2 = [-1, 0, 0], b_3 = [-1, 0, 0], b_4 = [-1, 0, 0], b_5 = [-1, 0, 0], b_6 = [-1, 0, 0], b_7 = [-1, 0, 0], b_8 = [-1, 0, 0], b_9 = [-1, 0, 0], b_10 = [-1, 0, 0], b_11 = [-1, 0, 0], b_12 = [0, -1, 0], b_13 = [0, -1, 0], c_1 = [0, 0, 1], c_2 = [0, 0, -1]}]";
         createGenerator(grammarString);
-        minSteps = testWalkLength;
-        maxSteps = testWalkLength;
+        minSteps = (int)Math.Round(testWalkLength * 0.95);
+        maxSteps = (int)Math.Round(testWalkLength * 1.05);
         int dimArray = testWalkLength + 1;
         int numExcursions = 0;
+        int numReturnToOrigin = 0;
+
+        int x, y, z = 0;
         for (int i = 0; i < testNumWalks; i++)
         {
             // Generate a walk
             Vector3[] newStepSeries = genStepSeriesOctantBoltzmann();
             // Find the final position
+            bool returnsHome = false;
             Vector3 finalPosition = Vector3.zero;
             for (int j = 0; j < newStepSeries.Length; j++)
             {
                 finalPosition = finalPosition + newStepSeries[j];
+                x = (int)(finalPosition[0]);
+                y = (int)(finalPosition[1]);
+                z = (int)(finalPosition[2]);
+                if (x == 0 && y == 0 && z == 0)
+                {
+                    returnsHome = true;
+                }
             }
-            int x = (int)(finalPosition[0]);
-            int y = (int)(finalPosition[1]);
-            int z = (int)(finalPosition[2]);
+            if (returnsHome)
+            {
+                numReturnToOrigin++;
+            }
+            // Now check whether it's an excursion (or one step away from an excursion)
+            x = (int)(finalPosition[0]);
+            y = (int)(finalPosition[1]);
+            z = (int)(finalPosition[2]);
+            if ((x == 0 && y == 0 && z == 0 ) || (x == 1 && y == 0 && z == 0) || (x == 0 && y == 1 && z == 0) || (x == 0 && y == 0 && z == 1))
+            {
+                numExcursions++;
+            }
             // Increment that element in the array by 1.
             //UnityEngine.Debug.Log("(x,y,z) = (" + x + "," + y + "," + z + ")");
-            if (x == 0 && y == 0 && z == 0)
-            {
-                numExcursions += 1;
-            }
+
         }
-        UnityEngine.Debug.Log("Walk length: " + testWalkLength + "\tNum Walks Generated: " + testNumWalks + "\tNum Excursions: " + numExcursions);
+        UnityEngine.Debug.Log("Walk target length: " + testWalkLength + "\tNum Walks Generated: " + testNumWalks + "\tNum walks that return to origin: " + numReturnToOrigin + "\tNum Excursions (or one step away): " + numExcursions);
+        swStats.WriteLine(testWalkLength + "\t" + testNumWalks + "\t" + numReturnToOrigin + "\t" + numExcursions);
         //string listName = "unityTest" + testNumWalks;
         //string newFilename = "TextOutputs/" + listName + "-" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss") + ".txt";
         //StreamWriter testOutput = new StreamWriter(newFilename);
@@ -1744,7 +1827,8 @@ public class GenerateWalks : MonoBehaviour
         for (int i = currentIndex; i < currentPointList.Count; i++)
         {
             point5 = currentPointList[i];
-            UnityEngine.Debug.Log("3D hull testing current point: " + point5);
+            //UnityEngine.Debug.Log("3D hull testing current point: " + point5);
+
             // At this point, we know all the points are in a 3D space (and not 4D space), so we don't have to check that.
             // For each point, we just have to go through the current list of facets and see if point5 is "above" any of them.
             // We DO have to keep track of visible edges. We can represent each edge as a set, since we don't need to care about direction.
@@ -1798,33 +1882,71 @@ public class GenerateWalks : MonoBehaviour
         //UnityEngine.Debug.Log("facetList.Count: " + facetList.Count);
         // Flatten out facetList
         //hullSet = new HashSet<Vector3>();
+
+
+        // Make sure to deal with the NORMALS
+        // Note: The normals should be perpendicular to the respective triangles, facing outward.
+        // In order to make sure they're facing outward, we must find the "center" of the polytope.
+        // Used this page for help with "Aggregate": https://stackoverflow.com/questions/33170643/finding-the-average-of-vectors-in-a-list
+        Vector3 average = inputPointList.Aggregate(new Vector3(0, 0, 0), (s, v) => s + v) / (float)inputPointList.Count;
+
+        List<Vector3> hullNormals = new List<Vector3>();
         for (int i = 0; i < facetList.Count; i++)
         {
+            // Note: For any given facet, all three vertices will have the same normal vector.
+            // Should be perpendicular to any two vectors made from the three vertices.
+            Vector3 newNormal = Vector3.Cross(facetList[i][1] - facetList[i][0], facetList[i][2] - facetList[i][0]);
+            newNormal = Vector3.Normalize(newNormal);
+            // Need to make sure they're pointing OUTWARD. Need to use the "center of gravity"?
+            // So: I need to make sure newNormal is pointing in roughly the same direction as any point on the facet minus "average". Use DOT PRODUCT
+            bool reverseTriangle = false;
+            if (Vector3.Dot(newNormal, facetList[i][0] - average) < 0)
+            {
+                newNormal = -newNormal;
+                // This tells me that the points are in the wrong order, so I need to reverse the triangle order later:
+                reverseTriangle = true;
+            }
             for (int j = 0; j < facetList[i].Count; j++)
             {
-                hullSet.Add(facetList[i][j]);
+                //hullSet.Add(facetList[i][j]);
                 hullVertices.Add(facetList[i][j]);
-                hullTriangles.Add(i * facetList[i].Count + j);
+                if (reverseTriangle)
+                {
+                    hullTriangles.Add(i * facetList[i].Count + facetList[i].Count - 1 - j);
+                }
+                else
+                {
+                    hullTriangles.Add(i * facetList[i].Count + j);
+                }
+                hullNormals.Add(newNormal);
             }
+            
         }
-        hullList = hullSet.ToList();
-        for (int i = 0; i < hullList.Count; i++)
-        {
+        //hullList = hullSet.ToList();
+        //for (int i = 0; i < hullList.Count; i++)
+        //{
             //UnityEngine.Debug.Log("hullList[" + i + "] = (" + String.Join(", ", hullList[i]) + ")");
-        }
+        //}
 
         // Add extra faces so visible from both sides:
-        int numVertices = hullVertices.Count;
+        /*
+         * int numVertices = hullVertices.Count;
         for (int i = 0; i < numVertices; i++)
         {
             //hullVertices.Add(hullVertices[i] + new Vector3(0.001f, 0.001f, 0.001f));
             hullTriangles.Add(numVertices - 1 - i);
+            //hullNormals.Add(-hullNormals[numVertices - 1 - i]);
+            //UnityEngine.Debug.Log("-hullNormals[numVertices - 1 - i] = " + (-hullNormals[numVertices - 1 - i]));
         }
+        */
+
+        
 
 
         hullMesh = new Mesh();
         hullMesh.vertices = hullVertices.ToArray();
         hullMesh.triangles = hullTriangles.ToArray();
+        hullMesh.normals = hullNormals.ToArray();
         //hullMesh.RecalculateNormals();
 
         return hullMesh;
