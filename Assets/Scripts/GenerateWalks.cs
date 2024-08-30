@@ -62,7 +62,7 @@ public class GenerateWalks : MonoBehaviour
 
     // Streamwriter for logging data:
     private StreamWriter swLog;
-    public bool loggingWalks;
+    public bool loggingWalks = true;
     private StreamWriter swStats;
 
     // Variables used for animation
@@ -145,6 +145,7 @@ public class GenerateWalks : MonoBehaviour
             walkLength += 20;
         }
         */
+        
 
         // Goal: Get batch statistics for walks in increments of 10 for lengths 10 to 1000-ish.
         // For Boltzmann, +- 5.
@@ -1552,7 +1553,9 @@ public class GenerateWalks : MonoBehaviour
     private void testExcursions(int testWalkLength, int testNumWalks)
     {
         // Use the stepset with drift (-1,-1,-1)
-        string grammarString = "[evaluations = {D = 1.592592638, P = 2.820845434, P_aux = 1.772750416, L_1 = .2040693826, L_2 = .03889145064, L_3 = .05530660054, L_4 = .1388679150, R_1 = .3987497634, R_2 = .1224121716, R_3 = .3113246277, R_4 = 1.527547068, a_1 = .08720000787, a_2 = .08720000787, b_1 = .08720000787, b_2 = .08720000787, b_3 = .08720000787, b_4 = .08720000787, b_5 = .08720000787, b_6 = .08720000787, b_7 = .08720000787, b_8 = .08720000787, b_9 = .08720000787, b_10 = .08720000787, b_11 = .08720000787, b_12 = .08720000787, b_13 = .08720000787, c_1 = .08720000787, c_2 = .08720000787}, grammar = {D = Union(Epsilon,Prod(c_1,D),Prod(c_2,D),Prod(L_1,R_1),Prod(L_2,R_2),Prod(L_3,R_3),Prod(L_4,R_4)), P = Prod(D,P_aux), P_aux = Union(Epsilon,Prod(L_1,P_aux),Prod(L_2,P_aux),Prod(L_3,P_aux),Prod(L_4,P_aux)), L_1 = Union(Prod(a_2,D),Prod(L_2,R_1),Prod(L_3,R_2),Prod(L_4,R_3)), L_2 = Union(Prod(L_3,R_1),Prod(L_4,R_2)), L_3 = Union(Prod(L_4,R_1)), L_4 = Union(Prod(a_1,D)), R_1 = Union(Prod(b_12,D),Prod(b_13,D),Prod(L_1,R_2),Prod(L_2,R_3),Prod(L_3,R_4)), R_2 = Union(Prod(L_1,R_3),Prod(L_2,R_4)), R_3 = Union(Prod(L_1,R_4)), R_4 = Union(Prod(b_1,D),Prod(b_2,D),Prod(b_3,D),Prod(b_4,D),Prod(b_5,D),Prod(b_6,D),Prod(b_7,D),Prod(b_8,D),Prod(b_9,D),Prod(b_10,D),Prod(b_11,D)), a_1 = Atom, a_2 = Atom, b_1 = Atom, b_2 = Atom, b_3 = Atom, b_4 = Atom, b_5 = Atom, b_6 = Atom, b_7 = Atom, b_8 = Atom, b_9 = Atom, b_10 = Atom, b_11 = Atom, b_12 = Atom, b_13 = Atom, c_1 = Atom, c_2 = Atom}, rho_approx = {.8720000787e-1}, atomSet = {a_1 = [1, 0, 0], a_2 = [0, 1, 0], b_1 = [-1, 0, 0], b_2 = [-1, 0, 0], b_3 = [-1, 0, 0], b_4 = [-1, 0, 0], b_5 = [-1, 0, 0], b_6 = [-1, 0, 0], b_7 = [-1, 0, 0], b_8 = [-1, 0, 0], b_9 = [-1, 0, 0], b_10 = [-1, 0, 0], b_11 = [-1, 0, 0], b_12 = [0, -1, 0], b_13 = [0, -1, 0], c_1 = [0, 0, 1], c_2 = [0, 0, -1]}]";
+        //string grammarString = "[evaluations = {D = 1.592592638, P = 2.820845434, P_aux = 1.772750416, L_1 = .2040693826, L_2 = .03889145064, L_3 = .05530660054, L_4 = .1388679150, R_1 = .3987497634, R_2 = .1224121716, R_3 = .3113246277, R_4 = 1.527547068, a_1 = .08720000787, a_2 = .08720000787, b_1 = .08720000787, b_2 = .08720000787, b_3 = .08720000787, b_4 = .08720000787, b_5 = .08720000787, b_6 = .08720000787, b_7 = .08720000787, b_8 = .08720000787, b_9 = .08720000787, b_10 = .08720000787, b_11 = .08720000787, b_12 = .08720000787, b_13 = .08720000787, c_1 = .08720000787, c_2 = .08720000787}, grammar = {D = Union(Epsilon,Prod(c_1,D),Prod(c_2,D),Prod(L_1,R_1),Prod(L_2,R_2),Prod(L_3,R_3),Prod(L_4,R_4)), P = Prod(D,P_aux), P_aux = Union(Epsilon,Prod(L_1,P_aux),Prod(L_2,P_aux),Prod(L_3,P_aux),Prod(L_4,P_aux)), L_1 = Union(Prod(a_2,D),Prod(L_2,R_1),Prod(L_3,R_2),Prod(L_4,R_3)), L_2 = Union(Prod(L_3,R_1),Prod(L_4,R_2)), L_3 = Union(Prod(L_4,R_1)), L_4 = Union(Prod(a_1,D)), R_1 = Union(Prod(b_12,D),Prod(b_13,D),Prod(L_1,R_2),Prod(L_2,R_3),Prod(L_3,R_4)), R_2 = Union(Prod(L_1,R_3),Prod(L_2,R_4)), R_3 = Union(Prod(L_1,R_4)), R_4 = Union(Prod(b_1,D),Prod(b_2,D),Prod(b_3,D),Prod(b_4,D),Prod(b_5,D),Prod(b_6,D),Prod(b_7,D),Prod(b_8,D),Prod(b_9,D),Prod(b_10,D),Prod(b_11,D)), a_1 = Atom, a_2 = Atom, b_1 = Atom, b_2 = Atom, b_3 = Atom, b_4 = Atom, b_5 = Atom, b_6 = Atom, b_7 = Atom, b_8 = Atom, b_9 = Atom, b_10 = Atom, b_11 = Atom, b_12 = Atom, b_13 = Atom, c_1 = Atom, c_2 = Atom}, rho_approx = {.8720000787e-1}, atomSet = {a_1 = [1, 0, 0], a_2 = [0, 1, 0], b_1 = [-1, 0, 0], b_2 = [-1, 0, 0], b_3 = [-1, 0, 0], b_4 = [-1, 0, 0], b_5 = [-1, 0, 0], b_6 = [-1, 0, 0], b_7 = [-1, 0, 0], b_8 = [-1, 0, 0], b_9 = [-1, 0, 0], b_10 = [-1, 0, 0], b_11 = [-1, 0, 0], b_12 = [0, -1, 0], b_13 = [0, -1, 0], c_1 = [0, 0, 1], c_2 = [0, 0, -1]}]";
+        // Drift (0,0,0)
+        string grammarString = "[evaluations = {D = 5.715403245, P = 119.5345480, P_aux = 20.91445571, L_1 = .9521861810, R_1 = .9521861810, a_1 = .1666, b_1 = .1666, c_1 = .1666, c_2 = .1666, c_3 = .1666, c_4 = .1666}, grammar = {D = Union(Epsilon,Prod(c_1,D),Prod(c_2,D),Prod(c_3,D),Prod(c_4,D),Prod(L_1,R_1)), P = Prod(D,P_aux), P_aux = Union(Epsilon,Prod(L_1,P_aux)), L_1 = Union(Prod(a_1,D)), R_1 = Union(Prod(b_1,D)), a_1 = Atom, b_1 = Atom, c_1 = Atom, c_2 = Atom, c_3 = Atom, c_4 = Atom}, rho_approx = {.1666}, atomSet = {a_1 = [0, 0, 1], b_1 = [0, 0, -1], c_1 = [1, 0, 0], c_2 = [0, 1, 0], c_3 = [-1, 0, 0], c_4 = [0, -1, 0]}]";
         createGenerator(grammarString);
         minSteps = (int)Math.Round(testWalkLength * 0.95);
         maxSteps = (int)Math.Round(testWalkLength * 1.05);
